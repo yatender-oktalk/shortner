@@ -1,11 +1,20 @@
 use actix_web::{get, web, App, HttpServer, Result};
+use serde::Deserialize;
 
-#[get("/users/{user_id}/{friend}")]
-async fn index(path: web::Path<(u32, String)>) -> Result<String> {
-    let (user_id, friend) = path.into_inner();
-    Ok(format!("Welcome {}, user_id {}", friend, user_id))
+#[derive(Deserialize)]
+struct Info {
+    user_id: u32,
+    friend: String,
 }
 
+/// extract path info using serde
+#[get("/users/{user_id}/{friend}")] // <- define path parameters
+async fn index(info: web::Path<Info>) -> Result<String> {
+    Ok(format!(
+        "Welcome {}, user_id {}!",
+        info.friend, info.user_id
+    ))
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
