@@ -1,18 +1,14 @@
-use actix_web::{get, web, App, HttpServer, Result};
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-struct Info {
-    user_id: u32,
-    friend: String,
-}
+use actix_web::{get, HttpRequest, App, HttpServer, Result};
 
 /// extract path info using serde
 #[get("/users/{user_id}/{friend}")] // <- define path parameters
-async fn index(info: web::Path<Info>) -> Result<String> {
+async fn index(req: HttpRequest) -> Result<String> {
+    let name: String = req.match_info().get("friend").unwrap().parse().unwrap();
+    let userid: i32 = req.match_info().query("user_id").parse().unwrap();
+
     Ok(format!(
         "Welcome {}, user_id {}!",
-        info.friend, info.user_id
+        name, userid
     ))
 }
 
