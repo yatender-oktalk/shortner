@@ -5,6 +5,13 @@ use serde::Deserialize;
 struct Info {
     username: String,
 }
+
+#[derive(Deserialize, Debug)]
+struct UserSignUpRequest {
+    phone: String,
+    email: String,
+    name: String,
+}
 /// extract path info using serde
 #[get("/users/{user_id}/{friend}")] // <- define path parameters
 async fn index(req: HttpRequest) -> Result<String> {
@@ -17,19 +24,6 @@ async fn index(req: HttpRequest) -> Result<String> {
     ))
 }
 
-/// extract body info using serde deserialize
-#[get("/")] // <- define path parameters
-async fn index2(info: web::Query<Info>) -> Result<String> {
-    Ok(format!(
-        "Welcome {},!",
-        info.username,
-    ))
-}
-
-async fn index4(info: web::Json<Info>) -> impl Responder {
-    format!("Welcome {}!", info.username)
-}
-
 /// extract path info using serde
 #[post("/submit")] // <- define path parameters
 async fn submit(info: web::Json<Info>) -> Result<String> {
@@ -39,26 +33,36 @@ async fn submit(info: web::Json<Info>) -> Result<String> {
     ))
 }
 
+#[post("")]
+async fn create_user(req: web::Json<UserSignUpRequest>) -> Result<String> {
+    
+    Ok(format!("Success User Create phone: {}, name: {}, email: {}", req.phone, req.name, req.email))
+}
+
+#[get("/{user_id}")]
+async fn show_user(req: HttpRequest) -> impl Responder {
+    let user_id: i32 = req.match_info().query("user_id").parse().unwrap();
+
+    format!(
+        "Welcome user_id {}!",  user_id
+    )
+}
+
+#[get("")]
+async fn show_all_users() -> impl Responder {
+    format!("showing all users")
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
-        let json_config = web::JsonConfig::default()
-            .limit(4096)
-            .error_handler(|err, _req| {
-                // create custom error response
-                error::InternalError::from_response(err, HttpResponse::Conflict().finish())
-                    .into()
-            });
-
-    App::new()
-    .service(index)
-    .service(index2)
-    .service(submit)
-    .service(
-        web::resource("/userlimit")
-        .app_data(json_config)
-        .route(web::post().to(index4))
-    )
+        App::new()
+        .service(
+            web::scope("/users")
+            .service(create_user)
+            .service(show_user)
+            .service(show_all_users)
+        )
     })
     .bind(("127.0.0.1", 8080))?
     .run()
