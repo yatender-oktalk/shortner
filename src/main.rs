@@ -1,8 +1,7 @@
 use actix_web::{
-    error, get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result,
+    get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Result
 };
-use serde::Deserialize;
-
+use serde::{Deserialize, Serialize};
 #[derive(Deserialize)]
 struct Info {
     username: String,
@@ -10,10 +9,17 @@ struct Info {
 
 #[derive(Deserialize, Debug)]
 struct UserSignUpRequest {
-    phone: String,
     email: String,
     name: String,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+struct UserSignUpResponse{
+    id: String,
+    email: String,
+    name: String,
+}
+
 /// extract path info using serde
 #[get("/users/{user_id}/{friend}")] // <- define path parameters
 async fn index(req: HttpRequest) -> Result<String> {
@@ -31,10 +37,17 @@ async fn submit(info: web::Json<Info>) -> Result<String> {
 
 #[post("")]
 async fn create_user(req: web::Json<UserSignUpRequest>) -> HttpResponse {
-    HttpResponse::Created().body(format!(
-        "Success User Create phone: {}, name: {}, email: {}",
-        req.phone, req.name, req.email
-    ))
+    let info = req.into_inner();
+    let create_user_resp = web::Json(UserSignUpResponse{
+        id: String::from("2"),
+        email: info.name,
+        name: info.email,
+    });
+
+    HttpResponse::Ok()
+    .content_type("application/json")
+    .insert_header(("auth-token", "TYUIO98HJIKDKJDLFJOSOJUI"))
+    .json(create_user_resp)
 }
 
 #[get("/{user_id}")]
